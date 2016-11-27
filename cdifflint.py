@@ -81,17 +81,18 @@ def main():
 
         if args.log:
             diff_hdl = revision_control_log(extra)
-            if not diff_hdl:
-                raise CDiffException(
-                    'Not in a supported workspace, supported are: {}'.format(
-                        ', '.join(supported_vcs)
-                    )
-                )
         elif sys.stdin.isatty():
             diff_hdl = revision_control_diff(extra)
         else:
             diff_hdl = (sys.stdin.buffer if hasattr(sys.stdin, 'buffer')
                         else sys.stdin)
+
+        if not diff_hdl:
+            raise CDiffException(
+                'Not in a supported workspace, supported are: {}'.format(
+                    ', '.join(supported_vcs)
+                )
+            )
 
         stream = PatchStream(diff_hdl)
 
