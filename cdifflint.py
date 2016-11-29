@@ -147,8 +147,13 @@ def chain_linters(linter_names):
     def lint(filepath):
         lint_messages = {}
         for linter in linter_names:
-            for msg in run_linter(linter, filepath):
-                lint_messages.setdefault(msg.line, []).append(msg)
+            matches_linter_extension = any(
+                filepath.endswith(n)
+                for n in LINTERS[linter]['file_extensions']
+            )
+            if matches_linter_extension:
+                for msg in run_linter(linter, filepath):
+                    lint_messages.setdefault(msg.line, []).append(msg)
 
         return OrderedDict(sorted(lint_messages.items()))
 
