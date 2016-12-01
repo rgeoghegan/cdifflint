@@ -36,8 +36,9 @@ LINTERS = {
         'file_extensions': ['.py'],
     },
     'jslint': {
-        'regex': '(?P<filename>\S\+)\n #\d+ (?P<msg>[^\n]+)\n.*// Line'
-            ' (?P<linenumber>\d\+), Pos (?P<position>\d\+)\n?',
+        'skip_lines': 2,
+        'regex': ' #\d+ (?P<msg>[^\n]+)\n.*// Line'
+            ' (?P<linenumber>\d+), Pos (?P<position>\d+)\n?',
         'file_extensions': ['.js'],
     }
 }
@@ -123,6 +124,11 @@ class LintMessage(object):
 
 
 def parse_linter_output(linter, output):
+    linter_details = LINTERS[linter]
+
+    for n in range(linter_details.get('skip_lines', 0)):
+        output = output[output.index('\n'):]
+
     regex = re.compile(LINTERS[linter]['regex'])
     for entry in regex.finditer(output):
         params = entry.groupdict()
