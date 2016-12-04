@@ -20,9 +20,7 @@ META_INFO = {
     'author': 'Rory Geoghegan',
     'email': 'r.geoghegan(@)gmail(.)com',
     'url': 'https://github.com/rgeoghegan/cdifflint',
-    'keywords': 'colored incremental side-by-side diff, with lint messagse',
-    'description': 'View colored, incremental diff in a workspace, '
-    'annotated with messages from your favorite linter.',
+    'keywords': 'colored incremental side-by-side diff, with lint messages',
 }
 
 LINTERS = {
@@ -46,7 +44,8 @@ LINTERS = {
 
 def argparser():
     parser = argparse.ArgumentParser(
-        description=META_INFO['description'],
+        description='View colored, incremental diff in a workspace, '
+            'annotated with messages from your favorite linter.',
         epilog="Note: Option parser will stop on first unknown option and "
         "pass them down to underneath revision control"
     )
@@ -69,7 +68,7 @@ def argparser():
         '-t', '--lint', action='append',
         help='run the given linters and show the lint messages in the diff. '
              'Currently supports {}. (Can be specified multiple '
-             'times)'.format(",".join(LINTERS.keys())))
+             'times)'.format(", ".join(LINTERS.keys())))
 
     return parser
 
@@ -167,8 +166,11 @@ def chain_linters(linter_names):
 
 
 class DiffMarkerWithLint(DiffMarker):
-    def __init__(self, *linters):
-        self.linter = chain_linters(*linters)
+    WRAP_CHAR = colorize('>', 'lightmagenta')
+
+    def __init__(self, width, linters):
+        self.linter = chain_linters(linters)
+        self.width = width
 
     def _markup_traditional(self, diff):
         """Returns a generator"""
@@ -214,7 +216,14 @@ class DiffMarkerWithLint(DiffMarker):
             return line
 
         lint_text = self._markup_lint(", ".join(str(n) for n in linting))
-        return "{} {}\n".format(line.replace("\n", "").ljust(80), lint_text)
+        justified_line = line.replace("\n", "")
+
+        if len(justified_line) > self.width:
+            justified_line = justified_line[:(self.width - 1)] + self.WRAP_CHAR
+        else:
+            justified_line = justified_line.ljust(self.width)
+
+        return "{} {}\n".format(justified_line, lint_text)
 
     def _markup_lint(self, text):
         return colorize(text, 'yellow')
@@ -293,7 +302,7 @@ def main():
                 (args.color == 'auto' and sys.stdout.isatty()):
 
             if args.lint:
-                marker = DiffMarkerWithLint(args.lint)
+                marker = DiffMarkerWithLint(args.width, args.lint)
             else:
                 marker = DiffMarker()
             markup_to_pager(stream, args, marker)
