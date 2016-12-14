@@ -167,6 +167,7 @@ def chain_linters(linter_names):
 
 class DiffMarkerWithLint(DiffMarker):
     WRAP_CHAR = colorize('>', 'lightmagenta')
+    COLOR_REGEX = re.compile(r'\\x1b\[\d{1,2}m')
 
     def __init__(self, width, linters):
         self.linter = chain_linters(linters)
@@ -244,17 +245,46 @@ class DiffMarkerWithLint(DiffMarker):
             return line
 
         lint_text = self._markup_lint(", ".join(str(n) for n in linting))
-        justified_line = line.replace("\n", "")
-
-        if len(justified_line) > self.width:
-            justified_line = justified_line[:(self.width - 1)] + self.WRAP_CHAR
-        else:
-            justified_line = justified_line.ljust(self.width)
-
+        justified_line = self._justify(line)
         return "{} {}\n".format(justified_line, lint_text)
 
     def _markup_lint(self, text):
         return colorize(text, 'yellow')
+
+    def _justify(self, line):
+        """
+        Given a diff line with shell color expressions (i.e. \\x1b[32m),
+        justifies the visible part of the line to the proper width.
+        """
+        line = line.replace("\n", "")
+
+        def text_parts():
+            last_end = 0
+            for match in self.COLOR_REGEX.finditer(line):
+                if match.start() > last_end:
+                    yield True, line[last_end:match.start()]
+                yield False, line[match.start():match.end()]
+                last_end = match.end()
+
+            if last_end < len(line):
+                yield True, line[last_end:]
+
+        text_left = self.width - 1
+        parts = []
+        for is_visible, text in text_parts():
+            if is_visible:
+                if len(text) > text_left:
+                    parts.append(text[:text_left - 1])
+                    parts.append(self.WRAP_CHAR)
+                    text_left = 0
+                    break
+                else:
+                    parts.append(text)
+                    text_left - len(text)
+            else:
+                parts.append(text)
+
+        return "".join(parts) + " " * text_left
 
     def hunk_line_number(self, hunk, lineno):
         """
