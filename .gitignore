@@ -1,0 +1,5 @@
+/build
+/cdiff-lint-venv
+/cdifflint.egg-info
+/dist
+/example_project
