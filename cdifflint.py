@@ -65,7 +65,7 @@ def argparser():
         metavar='M',
         help="""colorize mode 'auto' (default), 'always', or 'never'""")
     parser.add_argument(
-        '-t', '--lint', action='append',
+        '-t', '--lint', action='append', choices=LINTERS.keys(),
         help='run the given linters and show the lint messages in the diff. '
              'Currently supports {}. (Can be specified multiple '
              'times)'.format(", ".join(LINTERS.keys())))
@@ -182,6 +182,7 @@ class DiffMarkerWithLint(DiffMarker):
 
         assert diff._new_path[:6] == '+++ b/'
         linting = self.linter(diff._new_path.strip('\n')[6:])
+        lint_messages = 0
 
         for hunk in diff._hunks:
             for hunk_header in hunk._hunk_headers:
@@ -193,7 +194,15 @@ class DiffMarkerWithLint(DiffMarker):
                         # The '+' char after \x00 is kept
                         # DEBUG: yield 'NEW: %s %s\n' % (old, new)
                         line = new[1].strip('\x00\x01')
-                        yield self._markup_new(line)
+                        lint_message = linting.get(
+                            self.hunk_line_number(hunk, new[0])
+                        )
+                        if lint_message:
+                            lint_messages += 1
+
+                        yield self._add_linting(
+                            self._markup_new(line), lint_message
+                        )
                     elif not new[0]:
                         # The '-' char after \x00 is kept
                         # DEBUG: yield 'OLD: %s %s\n' % (old, new)
@@ -203,13 +212,32 @@ class DiffMarkerWithLint(DiffMarker):
                         # DEBUG: yield 'CHG: %s %s\n' % (old, new)
                         yield self._markup_old('-') + \
                             self._markup_mix(old[1], 'red')
-                        yield self._markup_new('+') + \
-                            self._markup_mix(new[1], 'green')
+
+                        lint_message = linting.get(
+                            self.hunk_line_number(hunk, new[0])
+                        )
+                        if lint_message:
+                            lint_messages += 1
+
+                        yield self._add_linting(
+                                self._markup_new('+') +
+                                self._markup_mix(new[1], 'green'),
+                                lint_message
+                            )
                 else:
+                    lint_message = linting.get(
+                        self.hunk_line_number(hunk, new[0])
+                    )
+                    if lint_message:
+                        lint_messages += 1
+
                     yield self._add_linting(
                         self._markup_common(' ' + old[1]),
                         linting.get(self.hunk_line_number(hunk, new[0]))
                     )
+
+        if lint_messages:
+            yield self._markup_lint("{} Error(s)".format(lint_messages))
 
     def _add_linting(self, line, linting):
         if not linting:
