@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 import argparse
 from collections import OrderedDict
 import os
@@ -46,7 +48,7 @@ def argparser():
     parser = argparse.ArgumentParser(
         description='View colored, incremental diff in a workspace, '
             'annotated with messages from your favorite linter.',
-        epilog="Note: Option parser will stop on first unknown option and "
+        epilog="Note: The option parser will stop on first unknown option and "
         "pass them down to underneath revision control"
     )
 
