@@ -17,7 +17,7 @@ with open('requirements.txt') as reqs:
 
 setup(
     name='cdifflint',
-    version='1.0.0',
+    version='1.0.1',
     author='Rory Geoghegan',
     author_email='r.geoghegan(@)gmail(.)com',
     license='BSD-3',
