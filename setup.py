@@ -19,7 +19,7 @@ setup(
     name='cdifflint',
     version='1.0.1',
     author='Rory Geoghegan',
-    author_email='r.geoghegan(@)gmail(.)com',
+    author_email='r.geoghegan@gmail.com',
     license='BSD-3',
     description='View colored, incremental diff in a workspace, annotated '
     'with messages from your favorite linter.',
